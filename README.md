@@ -186,9 +186,9 @@ docker exec -it kafka kafka-console-consumer.sh \
 - [x] Comprehensive error handling
 
 ### 🚧 **In Progress (Phase 2)**
-- [ ] Transaction processor service (Kafka Streams)
-- [ ] Real-time fraud detection algorithms
-- [ ] Windowed aggregations for velocity checks
+- [x] Transaction processor service (Kafka Streams)
+- [x] Real-time fraud detection algorithms
+- [x] Windowed aggregations for velocity checks
 - [ ] Account balance state management
 - [ ] Dead letter queue handling
 
