@@ -227,23 +227,6 @@ agritech:
     daily-transaction-limit: 100000.00
 ```
 
-## 📚 **Documentation**
-
-- **API Documentation**: See `/docs/api.md`
-- **Architecture Decision Records**: See `/docs/adr/`
-- **Deployment Guide**: See `/docs/deployment.md`
-
-## 🤝 **Contributing**
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
-
-## 📄 **License**
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🏆 **Use Cases Demonstrated**
 
@@ -254,6 +237,4 @@ This platform demonstrates advanced Kafka patterns suitable for:
 - **Risk Management**: Fraud detection and compliance
 - **Regulatory Reporting**: Audit trail and compliance logging
 
----
 
-**Built with ❤️ for enterprise-grade financial streaming applications**
