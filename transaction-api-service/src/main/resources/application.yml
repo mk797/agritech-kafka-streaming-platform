@@ -1,0 +1,49 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: agritech-transaction-api
+  kafka:  # MOVED UNDER spring: - THIS WAS THE ISSUE
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      enable-idempotence: true
+      retries: 2147483647
+      max-in-flight-requests-per-connection: 1
+      batch-size: 65536
+      linger-ms: 10
+      buffer-memory: 33554432
+      compression-type: snappy
+      request-timeout-ms: 30000
+      delivery-timeout-ms: 120000
+
+# AgriTech Bank specific configuration
+agritech:
+  kafka:
+    topics:
+      transactions: agritech-transactions
+  banking:
+    max-transaction-amount: 50000.00
+    daily-transaction-limit: 100000.00
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - metrics
+          - prometheus
+          - info
+  endpoint:
+    health:
+      show-details: ALWAYS
+
+logging:
+  level:
+    com.agritech.bank: debug
+    org.springframework.kafka: info
+    org.apache.kafka: warn
