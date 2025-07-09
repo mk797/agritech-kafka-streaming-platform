@@ -1,0 +1,180 @@
+-- =====================================================
+-- AGRITECH BANK - TRANSACTION ENRICHMENT PIPELINE
+-- =====================================================
+
+-- Set processing to earliest for testing
+SET 'auto.offset.reset' = 'earliest';
+
+-- =====================================================
+-- STEP 1: CREATE BASE STREAMS AND TABLES
+-- =====================================================
+
+-- Transactions Stream (all transaction types)
+CREATE STREAM transactions_stream (
+    transactionId VARCHAR,
+    accountId VARCHAR,
+    amount DECIMAL(10,2),
+    timestamp TIMESTAMP,
+    transactionType VARCHAR,
+    channel VARCHAR,
+    location VARCHAR,
+    currency VARCHAR,
+    status VARCHAR,
+    cardNumber VARCHAR,
+    withdrawalMode VARCHAR,
+    atmLocation VARCHAR
+) WITH (
+    KAFKA_TOPIC='agritech-transactions',
+    VALUE_FORMAT='JSON'
+);
+
+-- Account Status Table
+CREATE TABLE account_status_table (
+    accountId VARCHAR PRIMARY KEY,
+    status VARCHAR,
+    accountType VARCHAR,
+    lastUpdated TIMESTAMP
+) WITH (
+    KAFKA_TOPIC='agritech-account-status',
+    VALUE_FORMAT='JSON'
+);
+
+-- Customer Risk Table
+CREATE TABLE customer_risk_table (
+    accountId VARCHAR PRIMARY KEY,
+    riskLevel VARCHAR,
+    lastAssessment TIMESTAMP
+) WITH (
+    KAFKA_TOPIC='agritech-customer-risk',
+    VALUE_FORMAT='JSON'
+);
+
+-- Transaction Limits Table
+CREATE TABLE transaction_limits_table (
+    accountType VARCHAR PRIMARY KEY,
+    dailyLimit DECIMAL(10,2),
+    singleTxnLimit DECIMAL(10,2)
+) WITH (
+    KAFKA_TOPIC='agritech-transaction-limits',
+    VALUE_FORMAT='JSON'
+);
+
+-- =====================================================
+-- STEP 2: FILTER WITHDRAWAL TRANSACTIONS
+-- =====================================================
+
+CREATE STREAM withdrawal_stream AS
+    SELECT
+        transactionId,
+        accountId,
+        amount,
+        timestamp,
+        transactionType,
+        channel,
+        location,
+        currency,
+        status,
+        cardNumber,
+        withdrawalMode,
+        atmLocation
+    FROM transactions_stream
+    WHERE transactionType = 'WITHDRAWAL';
+
+-- =====================================================
+-- STEP 3: ENRICH WITHDRAWALS WITH LOOKUP DATA
+-- =====================================================
+
+CREATE STREAM enriched_transaction AS
+    SELECT
+        t.transactionId,
+        t.accountId,
+        t.amount,
+        t.timestamp,
+        t.transactionType,
+        t.channel,
+        t.location,
+        t.currency,
+        t.status,
+        t.cardNumber,
+        t.withdrawalMode,
+        t.atmLocation,
+        ac.status AS accountStatus,
+        ac.accountType,
+        c.riskLevel,
+        tl.singleTxnLimit,
+        tl.dailyLimit
+    FROM withdrawal_stream t
+    INNER JOIN account_status_table ac ON t.accountId = ac.accountId
+    LEFT JOIN customer_risk_table c ON t.accountId = c.accountId
+    INNER JOIN transaction_limits_table tl ON ac.accountType = tl.accountType;
+
+-- =====================================================
+-- STEP 4: CALCULATE RISK AND APPLY BUSINESS LOGIC
+-- =====================================================
+
+CREATE STREAM processed_transaction AS
+    SELECT
+        transactionId,
+        accountId,
+        amount,
+        timestamp,
+        transactionType,
+        channel,
+        location,
+        accountStatus,
+        accountType,
+        singleTxnLimit,
+        CASE
+            WHEN riskLevel IS NULL THEN 'UNKNOWN'
+            ELSE riskLevel
+        END AS final_risk_level,
+        CASE
+            WHEN accountStatus = 'SUSPENDED' THEN 'HIGH_RISK'
+            WHEN amount > singleTxnLimit THEN 'MEDIUM_RISK'
+            WHEN riskLevel IS NULL AND amount > 5000 THEN 'MEDIUM_RISK'
+            WHEN riskLevel = 'HIGH' AND amount > 1000 THEN 'HIGH_RISK'
+            ELSE 'NO_RISK'
+        END AS calculated_risk
+    FROM enriched_transaction;
+
+-- =====================================================
+-- STEP 5: ROUTE TO DIFFERENT TOPICS
+-- =====================================================
+
+-- Rejected Transactions (High Risk)
+CREATE STREAM reject_stream
+WITH (KAFKA_TOPIC='agritech-reject-stream', PARTITIONS=2) AS
+    SELECT *
+    FROM processed_transaction
+    WHERE calculated_risk = 'HIGH_RISK'
+    PARTITION BY accountId;
+
+-- Review Required Transactions (Medium Risk)
+CREATE STREAM review_stream
+WITH (KAFKA_TOPIC='agritech-review-stream', PARTITIONS=2) AS
+    SELECT *
+    FROM processed_transaction
+    WHERE calculated_risk = 'MEDIUM_RISK'
+    PARTITION BY accountId;
+
+-- Approved Transactions (No Risk)
+CREATE STREAM approved_stream
+WITH (KAFKA_TOPIC='agritech-approved-stream', PARTITIONS=2) AS
+    SELECT *
+    FROM processed_transaction
+    WHERE calculated_risk = 'NO_RISK'
+    PARTITION BY accountId;
+
+-- =====================================================
+-- STEP 6: MONITORING QUERIES
+-- =====================================================
+
+-- Show all streams and tables
+-- SHOW STREAMS;
+-- SHOW TABLES;
+
+-- Query examples (uncomment to use):
+-- SELECT * FROM processed_transaction EMIT CHANGES LIMIT 10;
+-- SELECT * FROM reject_stream EMIT CHANGES LIMIT 5;
+
+PRINT 'Pipeline creation completed successfully!';

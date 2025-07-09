@@ -1,0 +1,91 @@
+BUSINESS CONTEXT:
+Agritech bank processes transactions but needs enrichment from multiple sources:
+
+Account status (ACTIVE/SUSPENDED/CLOSED)
+Customer risk rating (LOW/MEDIUM/HIGH/UNKNOWN)
+Transaction limits per account type
+
+transaction TOPIC:
+{"txnId": "TXN-001", "accountId": "ACC-123", "amount": 5000.00, "timestamp": "2024-01-15T10:30:00"}
+
+account_status TOPIC:
+{"accountId": "ACC-123", "status": "ACTIVE", "accountType": "PREMIUM", "lastUpdated": "2024-01-15T09:00:00"}
+
+customer_risk TOPIC:
+{"accountId": "ACC-123", "riskLevel": "MEDIUM", "lastAssessment": "2024-01-10T14:00:00"}
+
+
+transaction_limits TOPIC:
+{"accountType": "PREMIUM", "dailyLimit": 50000.00, "singleTxnLimit": 10000.00}
+
+
+
+Problem STATEMENT:
+1. CREATE STREAMS/TABLES for each data source
+2. ENRICH transactions with ALL related data
+3. HANDLE MISSING DATA (what if account has no risk rating?)
+4. APPLY BUSINESS LOGIC:
+
+SUSPENDED accounts → reject_topic
+Amount > single limit → review_topic
+UNKNOWN risk + HIGH amount → manual_review_topic
+Everything else → approved_topic
+
+
+create stream transactions_table (txnId VARCHAR , accountId VARCHAR key, amount double,timestamp timestamp)
+with(kafka_topic='transactions', value_format='json');
+
+create table account_status_table (accountId VARCHAR primary key, status VARCHAR, accountType VARCHAR,lastUpdated timestamp)
+with(kafka_topic='account_status', value_format='json');
+
+create table customer_risk_table (accountId VARCHAR primary key, riskLevel VARCHAR,lastAssessment timestamp)
+with(kafka_topic='customer_risk', value_format='json');
+
+create table transaction_limits_table (accountType VARCHAR primary key, dailyLimit double, singleTxnLimit double)
+with(kafka_topic='transaction_limits', value_format='json');
+
+
+
+create stream enriched_transaction as
+select txnId, accountId, amount, status, riskLevel, amount from
+transactions_table t_table
+inner join account_status_table  ac_table on t_table.accountId = ac_table.accountId
+left join customer_risk_table c_table on c_table.accountId = t_table.accountId
+inner join transaction_limits_table  tl_table on ac_table.accountType = tl_table.accountType;
+
+create stream processed_transaction as
+select txnId, accountId, amount, status,
+
+CASE
+    WHEN riskLevel is null THEN 'UNKNOWN'
+    ELSE riskLevel
+END AS final_risk_level,
+
+CASE
+    WHEN status ='suspended' THEN 'HIGH_RISK'
+    WHEN final_risk_level ='CRITICAL' THEN 'HIGH_RISK'
+    WHEN amount > singleTxnLimit THEN 'MEDIUM_RISK'
+    WHEN  final_risk_level = 'UNKNOWN' and amount > 10000 THEN 'MEDIUM_RISK'
+    ELSE 'NO_RISK'
+END AS calcualated_risk
+
+from enriched_transaction;
+
+
+create stream reject_stream  with(kafka_topic='reject_stream', partitions=1) as
+select * from
+processed_transaction
+where calculated_risk = 'HIGH_RISK'
+partition by accountId;
+
+create stream review_stream  with(kafka_topic='review_stream', partitions=1)  as
+select * from
+processed_transaction
+where calculated_risk = 'MEDIUM_RISK'
+partition by accountId;
+
+create stream approved_stream with(kafka_topic='approved_stream', partitions=1) as
+select * from
+processed_transaction
+where calculated_risk = 'NO_RISK'
+partition by accountId;

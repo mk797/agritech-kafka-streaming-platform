@@ -26,10 +26,7 @@ public class KafkaStreamsConfig {
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, JsonSerde.class.getName());
         props.put(JsonDeserializer.TRUSTED_PACKAGES, "com.agritech.bank.model");
 
-        // ✅ THIS IS THE FINAL FIX:
-        // Provide a default type for the value deserializer. This tells Kafka Streams
-        // to deserialize incoming messages as the base Transaction class, allowing
-        // Jackson to use the subtype annotations to create the correct object.
+
         props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, Transaction.class);
 
         return new KafkaStreamsConfiguration(props);

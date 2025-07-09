@@ -32,8 +32,59 @@ docker exec -it agritech-kafka kafka-topics \
   --partitions 2 \
   --replication-factor 1
 
+docker exec -it agritech-kafka kafka-topics \
+  --create \
+  --if-not-exists \
+  --bootstrap-server localhost:9092 \
+  --topic agritech-account-status \
+  --partitions 2 \
+  --replication-factor 1
+
+
+docker exec -it agritech-kafka kafka-topics \
+  --create \
+  --if-not-exists \
+  --bootstrap-server localhost:9092 \
+  --topic agritech-customer-risk \
+  --partitions 2 \
+  --replication-factor 1
+
+docker exec -it agritech-kafka kafka-topics \
+  --create \
+  --if-not-exists \
+  --bootstrap-server localhost:9092 \
+  --topic agritech-transaction-limits \
+  --partitions 2 \
+  --replication-factor 1
+
+docker exec -it agritech-kafka kafka-topics \
+  --create \
+  --if-not-exists \
+  --bootstrap-server localhost:9092 \
+  --topic agritech-reject-stream \
+  --partitions 2 \
+  --replication-factor 1
+
+docker exec -it agritech-kafka kafka-topics \
+  --create \
+  --if-not-exists \
+  --bootstrap-server localhost:9092 \
+  --topic agritech-review-stream \
+  --partitions 2 \
+  --replication-factor 1
+
+docker exec -it agritech-kafka kafka-topics \
+  --create \
+  --if-not-exists \
+  --bootstrap-server localhost:9092 \
+  --topic agritech-approved-stream \
+  --partitions 2 \
+  --replication-factor 1
+
 # Verify all topics have been created
 echo "Verifying topics..."
 docker exec -it agritech-kafka kafka-topics \
   --bootstrap-server localhost:9092 \
   --list
+
+

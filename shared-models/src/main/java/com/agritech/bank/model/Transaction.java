@@ -59,7 +59,7 @@ public abstract class Transaction {
     @JsonProperty("status")
     private TransactionStatus status;
 
-    // ✅ NO @JsonProperty annotation here - Jackson handles this automatically
+
     public abstract TransactionType getTransactionType();
 
     protected Transaction() {
