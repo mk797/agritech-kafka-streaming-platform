@@ -42,6 +42,7 @@ graph TD
     E --> L[Review Stream - Medium Risk]
     E --> M[Approved Stream - Low Risk]
 
+```
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────────┐
