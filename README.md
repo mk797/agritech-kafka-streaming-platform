@@ -21,18 +21,13 @@ This project showcases advanced Kafka streaming capabilities for financial servi
 ## 🏗️ **Enhanced Architecture**
 
 
-## 🏗️ **System Architecture**
-
 ### **Data Flow Diagram**
 
 Here is a simple flow chart:
 
 ```mermaid
 graph TD;
-    A-->B;
-    A-->C;
-    B-->D;
-    C-->D;
+    
 ```
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────────┐
