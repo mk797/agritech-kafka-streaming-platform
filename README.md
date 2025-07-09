@@ -25,7 +25,15 @@ This project showcases advanced Kafka streaming capabilities for financial servi
 
 ### **Data Flow Diagram**
 
+Here is a simple flow chart:
 
+```mermaid
+graph TD;
+    A-->B;
+    A-->C;
+    B-->D;
+    C-->D;
+```
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────────┐
 │   REST Client   │───▶│ Transaction API  │───▶│   Kafka Topics      │
