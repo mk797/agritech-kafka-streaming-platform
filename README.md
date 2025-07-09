@@ -1,5 +1,4 @@
 
-```markdown
 # 🏦 AgriTech Bank Kafka Streaming Platform
 
 A comprehensive Apache Kafka streaming platform designed for banking transaction processing, enterprise-grade event-driven architecture patterns with advanced KSQL enrichment capabilities.
