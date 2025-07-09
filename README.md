@@ -28,7 +28,7 @@ Here is a simple flow chart:
 
 
     
-```
+
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────────┐
 │   REST Client   │───▶│ Transaction API  │───▶│   Kafka Topics      │
