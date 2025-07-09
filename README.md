@@ -42,6 +42,32 @@ This project showcases advanced Kafka streaming capabilities for financial servi
 └─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘
 ```
 
+graph TD
+    subgraph "Input Layer"
+        A[REST Client] --> B[Transaction API Service];
+        B --> C{agritech-transactions<br/>Kafka Topic};
+    end
+
+    subgraph "Real-time Processing Layer"
+        C --> D[Kafka Streams<br/>Stateful Fraud Detection];
+        C --> E[KSQL Enrichment & Risk Routing];
+    end
+
+    subgraph "Output & Alerting Layer"
+        D --> F[Velocity Fraud Alerts];
+        D --> G[Individual Fraud Alerts];
+        E --> H[Approved Stream<br/>(Low Risk)];
+        E --> I[Review Stream<br/>(Medium Risk)];
+        E --> J[Reject Stream<br/>(High Risk)];
+    end
+
+    style C fill:#f9f,stroke:#333,stroke-width:2px
+    style F fill:#fce7e7,stroke:#c00
+    style G fill:#fce7e7,stroke:#c00
+    style H fill:#d4edda,stroke:#155724
+    style I fill:#fff3cd,stroke:#856404
+    style J fill:#f8d7da,stroke:#721c24
+
 ## 📊 **Technology Stack**
 
 | Component | Technology | Version | Use Case |
