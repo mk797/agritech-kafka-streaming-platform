@@ -5,6 +5,8 @@
 
 A comprehensive Apache Kafka streaming platform designed for banking transaction processing, enterprise-grade event-driven architecture patterns with advanced KSQL enrichment capabilities.
 
+
+
 ## 🎯 **Project Overview**
 
 This project showcases advanced Kafka streaming capabilities for financial services, implementing real-time transaction processing with fraud detection, multi-source data enrichment, audit compliance, and exactly-once semantics required for banking applications.
