@@ -24,25 +24,7 @@ This project showcases advanced Kafka streaming capabilities for financial servi
 ## 🏗️ **System Architecture**
 
 ### **Data Flow Diagram**
-```mermaid
-graph TD
-    A[REST Client] --> B[Transaction API]
-    B --> C[Kafka: agritech-transactions]
-    C --> D[Kafka Streams Processor]
-    C --> E[KSQL Enrichment Pipeline]
-    
-    F[Account Status] --> E
-    G[Customer Risk] --> E
-    H[Transaction Limits] --> E
-    
-    D --> I[Velocity Fraud Alerts]
-    D --> J[Individual Fraud Alerts]
-    
-    E --> K[Reject Stream - High Risk]
-    E --> L[Review Stream - Medium Risk]
-    E --> M[Approved Stream - Low Risk]
 
-```
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────────┐
