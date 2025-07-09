@@ -25,8 +25,8 @@ This project showcases advanced Kafka streaming capabilities for financial servi
 
 Here is a simple flow chart:
 
-```mermaid
-graph TD;
+
+
     
 ```
 ```
