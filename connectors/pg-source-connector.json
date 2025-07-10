@@ -1,0 +1,56 @@
+{
+  "user_details_connector": {
+    "name": "user-details-source",
+    "config": {
+      "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+      "tasks.max": "1",
+      "database.hostname": "postgres",
+      "database.port": "5432",
+      "database.user": "jlr_user",
+      "database.password": "jlr_user",
+      "database.dbname": "jlr_users",
+      "database.server.name": "jlr-postgres-server",
+      "table.include.list": "public.user_details",
+      "topic.prefix": "jlr-db",
+      "plugin.name": "pgoutput",
+      "slot.name": "user_details_slot",
+      "key.converter": "io.confluent.connect.avro.AvroConverter",
+      "key.converter.schema.registry.url": "http://schema-registry:8081",
+      "value.converter": "io.confluent.connect.avro.AvroConverter",
+      "value.converter.schema.registry.url": "http://schema-registry:8081",
+      "transforms": "route",
+      "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
+      "transforms.route.regex": "jlr-db\\.public\\.user_details",
+      "transforms.route.replacement": "user-details-topic",
+      "time.precision.mode": "adaptive_time_microseconds",
+      "include.schema.changes": "false"
+    }
+  },
+  "ssn_details_connector": {
+    "name": "ssn-details-source",
+    "config": {
+      "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+      "tasks.max": "1",
+      "database.hostname": "postgres",
+      "database.port": "5432",
+      "database.user": "jlr_user",
+      "database.password": "jlr_user",
+      "database.dbname": "jlr_users",
+      "database.server.name": "jlr-postgres-server-ssn",
+      "table.include.list": "public.ssn_details",
+      "topic.prefix": "jlr-db",
+      "plugin.name": "pgoutput",
+      "slot.name": "ssn_details_slot",
+      "key.converter": "io.confluent.connect.avro.AvroConverter",
+      "key.converter.schema.registry.url": "http://schema-registry:8081",
+      "value.converter": "io.confluent.connect.avro.AvroConverter",
+      "value.converter.schema.registry.url": "http://schema-registry:8081",
+      "transforms": "route",
+      "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
+      "transforms.route.regex": "jlr-db\\.public\\.ssn_details",
+      "transforms.route.replacement": "ssn-details-topic",
+      "time.precision.mode": "adaptive_time_microseconds",
+      "include.schema.changes": "false"
+    }
+  }
+}

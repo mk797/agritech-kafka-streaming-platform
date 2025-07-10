@@ -394,3 +394,78 @@ mvn spring-boot:run -pl transaction-processor-service
 curl http://localhost:8080/actuator/metrics
 ```
 
+
+# Kafka Stream Data Enrichment Pipeline
+
+## Overview
+
+This project includes real-time data enrichment pipeline** using Apache Kafka, KSQL, and PostgreSQL. It showcases how to handle **lagging data sources** and implement enterprise-level retry mechanisms for stream processing.
+
+### Use Case
+- **Primary Source**: Account details (PostgreSQL)
+- **Secondary Source**: SSN details (PostgreSQL - separate table, simulating delayed data)
+- **Challenge**: SSN data arrives 5-10 seconds after account data
+- **Solution**: Windowed joins with intelligent retry mechanism
+
+## Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐
+│   PostgreSQL    │    │   PostgreSQL    │
+│ Account Details │    │   SSN Details   │
+└─────────┬───────┘    └─────────┬───────┘
+          │                      │
+          │ Debezium CDC         │ Debezium CDC
+          │                      │
+          ▼                      ▼
+┌─────────────────────────────────────────────┐
+│              Apache Kafka               │
+│  ┌─────────────────┐ ┌─────────────────┐    │
+│  │ account-details │ │   ssn-details   │    │
+│  │     topic       │ │     topic       │    │
+│  └─────────────────┘ └─────────────────┘    │
+└─────────────────┬───────────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────────┐
+│                 KSQL                    │
+│  ┌─────────────────────────────────────┐    │
+│  │     Windowed Join + Retry Logic     │    │
+│  │   • 30-second window for immediate  │    │
+│  │   • Table lookup for delayed data   │    │
+│  │   • Timeout handling (2 minutes)    │    │
+│  └─────────────────────────────────────┘    │
+└─────────────────┬───────────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────────┐
+│           Enriched Data Stream          │
+│  ┌─────────────────────────────────────┐    │
+│  │ • ENRICHED (immediate match)        │    │
+│  │ • RETRY_ENRICHED (delayed match)    │    │
+│  │ • TIMEOUT_NO_SSN (no SSN found)     │    │
+│  └─────────────────────────────────────┘    │
+└─────────────────────────────────────────────┘
+```
+
+## Key Features
+
+### 🚀 **Enterprise-Grade Patterns**
+- **Windowed Joins**: Handle timing mismatches between data sources
+- **Retry Mechanisms**: Intelligent retry for late-arriving data
+- **Timeout Handling**: Graceful handling of missing data
+- **SLA Monitoring**: Real-time metrics and alerting
+- **Dead Letter Queues**: Proper error handling
+
+
+## Technology Stack
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Streaming Platform** | Apache Kafka | Message broker and event streaming |
+| **Stream Processing** | KSQL | Real-time data processing and enrichment |
+| **Change Data Capture** | Debezium | PostgreSQL CDC connector |
+| **Schema Management** | Confluent Schema Registry | AVRO schema evolution |
+| **Database** | PostgreSQL | Primary data sources |
+| **Monitoring** | Confluent Control Center | Enterprise monitoring and alerting |
+
