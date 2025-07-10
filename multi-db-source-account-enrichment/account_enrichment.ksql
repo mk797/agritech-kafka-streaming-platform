@@ -1,0 +1,161 @@
+-- accounts stream (initial)
+CREATE STREAM account_details_stream (
+    account_id VARCHAR KEY,
+    customer_name VARCHAR,
+    account_type VARCHAR,
+    created_timestamp BIGINT
+) WITH (
+    KAFKA_TOPIC = 'account-details-topic',
+    VALUE_FORMAT = 'AVRO'
+);
+
+CREATE STREAM ssn_details_stream (
+    account_id VARCHAR KEY,
+    ssn VARCHAR,
+    issue_timestamp BIGINT
+) WITH (
+    KAFKA_TOPIC = 'ssn-details-topic',
+    VALUE_FORMAT = 'AVRO'
+);
+
+--  windowed join
+CREATE STREAM enriched_account_stream WITH (
+    KAFKA_TOPIC = 'enriched-account-topic',
+    PARTITIONS = 6
+) AS
+SELECT
+    acc.account_id AS account_id,
+    acc.customer_name,
+    acc.account_type,
+    ssn.ssn,
+    acc.created_timestamp,
+    CASE
+        WHEN ssn.ssn IS NOT NULL THEN 'ENRICHED'
+        ELSE 'PENDING_SSN'
+    END as enrichment_status
+FROM account_details_stream acc
+LEFT JOIN ssn_details_stream ssn
+    WITHIN 30 SECONDS ON acc.account_id = ssn.account_id
+PARTITION BY acc.account_id;
+
+
+
+
+--  RETRY MECHANISM
+
+-- 1. Create SSN lookup table from stream (as you suggested)
+CREATE TABLE ssn_lookup_table AS
+SELECT
+    account_id,
+    LATEST_BY_OFFSET(ssn) as ssn,
+    LATEST_BY_OFFSET(issue_timestamp) as latest_issue_timestamp
+FROM ssn_details_stream
+GROUP BY account_id
+EMIT CHANGES;
+
+
+-- 2. Filter out records that need retry
+CREATE STREAM retry_candidates AS
+SELECT *
+FROM enriched_account_stream
+WHERE enrichment_status = 'PENDING_SSN'
+EMIT CHANGES;
+
+
+-- 3. Retry mechanism using table lookup
+CREATE STREAM retry_enriched AS
+SELECT
+    r.account_id,
+    r.customer_name,
+    r.account_type,
+    s.ssn,
+    r.created_timestamp,
+    'RETRY_ENRICHED' as enrichment_status,
+    ROWTIME as retry_timestamp
+FROM retry_candidates r
+INNER JOIN ssn_lookup_table s ON r.account_id = s.account_id
+WHERE s.latest_issue_timestamp > r.created_timestamp  -- Only join if SSN arrived after account
+EMIT CHANGES;
+
+
+
+-- 4. Final timeout handling (records that never get SSN)
+CREATE STREAM final_timeout AS
+SELECT
+    account_id,
+    customer_name,
+    account_type,
+    CAST(NULL AS VARCHAR) as ssn,
+    created_timestamp,
+    'TIMEOUT_NO_SSN' as enrichment_status,
+    ROWTIME as timeout_timestamp
+FROM retry_candidates
+WHERE ROWTIME > (created_timestamp + 60000)  -- 1 minute total timeout
+EMIT CHANGES;
+
+
+
+-- 5. Union all results for downstream consumption
+CREATE STREAM final_enriched_accounts AS
+SELECT
+    account_id,
+    customer_name,
+    account_type,
+    ssn,
+    created_timestamp,
+    enrichment_status
+FROM enriched_account_stream
+WHERE enrichment_status = 'ENRICHED'
+EMIT CHANGES;
+
+-- Insert retry successes
+INSERT INTO final_enriched_accounts
+SELECT
+    account_id,
+    customer_name,
+    account_type,
+    ssn,
+    created_timestamp,
+    enrichment_status
+FROM retry_enriched
+EMIT CHANGES;
+
+
+
+-- Insert timeouts
+INSERT INTO final_enriched_accounts
+SELECT
+    account_id,
+    customer_name,
+    account_type,
+    ssn,
+    created_timestamp,
+    enrichment_status
+FROM final_timeout
+EMIT CHANGES;
+
+
+
+-- 6. Monitoring and SLA tracking
+CREATE TABLE enrichment_metrics AS
+SELECT
+    enrichment_status,
+    COUNT(*) as record_count,
+    COUNT(*) * 100.0 / SUM(COUNT(*)) OVER() as percentage
+FROM final_enriched_accounts
+WINDOW TUMBLING (SIZE 5 MINUTES)
+GROUP BY enrichment_status
+EMIT CHANGES;
+
+
+
+-- 7. Latency monitoring for retry cases
+CREATE TABLE retry_latency_metrics AS
+SELECT
+    AVG(retry_timestamp - created_timestamp) / 1000.0 as avg_retry_delay_seconds,
+    MAX(retry_timestamp - created_timestamp) / 1000.0 as max_retry_delay_seconds,
+    COUNT(*) as retry_count
+FROM retry_enriched
+WINDOW TUMBLING (SIZE 1 MINUTE)
+GROUP BY 1
+EMIT CHANGES;
