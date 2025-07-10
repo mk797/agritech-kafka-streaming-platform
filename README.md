@@ -338,25 +338,6 @@ agritech:
         unknown-customer: 5000.00
 ```
 
-## 🎯 **Production Metrics & KPIs** ⭐ **NEW**
-
-### **Performance Metrics**
-- **Throughput**: 100K+ transactions per second
-- **Enrichment Latency**: <50ms for risk assessment
-- **End-to-end Latency**: <100ms transaction to routing
-- **Availability**: 99.9% uptime with graceful degradation
-
-### **Business Impact**
-- **Fraud Detection Accuracy**: 95%+ detection rate
-- **False Positives**: <2% for automated decisions
-- **Cost Reduction**: 70% reduction in manual review overhead
-- **Processing Efficiency**: 60% reduction in unnecessary processing
-
-### **Operational Excellence**
-- **Query Success Rate**: >99.5% for KSQL enrichment queries
-- **Data Freshness**: <10ms lag for critical account status updates
-- **Scalability**: Linear scaling with partition increase
-
 ## 🏆 **Advanced Use Cases Demonstrated**
 
 This platform demonstrates enterprise-grade Kafka patterns suitable for:
