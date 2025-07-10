@@ -1,9 +1,9 @@
-**🔥 HERE'S YOUR COMPLETE UPDATED README WITH KSQL INTEGRATION!**
 
-```markdown
 # 🏦 AgriTech Bank Kafka Streaming Platform
 
 A comprehensive Apache Kafka streaming platform designed for banking transaction processing, enterprise-grade event-driven architecture patterns with advanced KSQL enrichment capabilities.
+
+
 
 ## 🎯 **Project Overview**
 
@@ -19,6 +19,15 @@ This project showcases advanced Kafka streaming capabilities for financial servi
 - **Production-Ready**: Comprehensive monitoring, logging, and error handling
 
 ## 🏗️ **Enhanced Architecture**
+
+
+### **Data Flow Diagram**
+
+Here is a simple flow chart:
+
+
+
+    
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────────┐
